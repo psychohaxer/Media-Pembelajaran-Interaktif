@@ -26,8 +26,8 @@ define gui.show_name = True
 define config.version = "1.0"
 
 
-## Text that is placed on the game's about screen. Place the text between the
-## triple-quotes, and leave a blank line between paragraphs.
+## Teks yang ditempatkan pada layar tentang game. Tempatkan teks di antara tanda
+## kutip tiga, dan biarkan baris kosong di antara paragraf.
 
 define gui.about = _p("""
 """)
@@ -42,9 +42,9 @@ define build.name = "MediaPembelajaranInteraktif"
 
 ## Suara dan musik #############################################################
 
-## Tiga variabel ini mengendalikan mixer yang mana yang di tampilkan ke pemain
-## secara default. Menset salah satu dari ini ke False akan menyembunyikan mixer
-## tersebut.
+## Ketiga variabel ini mengontrol, antara lain, mixer mana yang ditampilkan
+## kepada pemain secara default. Menetapkan salah satu dari variabel ini ke
+## False akan menyembunyikan mixer yang sesuai.
 
 define config.has_sound = True
 define config.has_music = True
@@ -146,7 +146,7 @@ default preferences.afm_time = 15
 ## Ini shearus nya tidak usah di ganti, dan juga iya, harus selalu berisi
 ## string, bukan expresi.
 
-define config.save_directory = "MediaPembelajaranInteraktif-1697513307"
+define config.save_directory = "MediaPembelajaranInteraktif-1697513791"
 
 
 ## Ikon ########################################################################
@@ -199,16 +199,10 @@ init python:
     build.documentation('*.html')
     build.documentation('*.txt')
 
-## Atur ini ke string yang berisi ID Developer Aplikasi Apple mu untuk
-## mengaktifkan codesigning di Mac. Pastikan untuk mengganti nya ke ID mu
-## sendiri yang sudah di berikan oleh Apple.
 
-# define build.mac_identity = "Developer ID Application: Guy Shy (XHTE5H7Z42)"
-
-
-## Kunci Lisensi Google Play di butuhkan untuk mendownload file tambahan dan
-## untuk dapat melakukan pembelian in-app. Itu dapat di temukan di halaman
-## "Services & APIs" delveloper konsol Google Play.
+## Kunci lisensi Google Play diperlukan untuk melakukan pembelian dalam
+## aplikasi. Kunci ini dapat ditemukan di konsol pengembang Google Play, di
+## bawah "Monetisasi" > "Pengaturan Monetisasi" > "Lisensi".
 
 # define build.google_play_key = "..."
 

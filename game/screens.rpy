@@ -161,6 +161,7 @@ style say_dialogue:
     xsize gui.dialogue_width
     ypos gui.dialogue_ypos
 
+    adjust_spacing False
 
 ## Layar masukkan/input ########################################################
 ##
@@ -178,7 +179,7 @@ screen input(prompt):
     window:
 
         vbox:
-            xalign gui.dialogue_text_xalign
+            xanchor gui.dialogue_text_xalign
             xpos gui.dialogue_xpos
             xsize gui.dialogue_width
             ypos gui.dialogue_ypos
@@ -211,11 +212,6 @@ screen choice(items):
     vbox:
         for i in items:
             textbutton i.caption action i.action
-
-
-## Bila ini benar, caption menu akan diucapkan oleh narator. Bila salah, caption
-## menu akan ditampilkan sebagai tombol kosong.
-define config.narrator_menu = True
 
 
 style choice_vbox is vbox
@@ -324,12 +320,15 @@ screen navigation():
 
         textbutton _("Tentang") action ShowMenu("about")
 
-        if renpy.variant("pc"):
+        if renpy.variant("pc") or (renpy.variant("web") and not renpy.variant("mobile")):
 
             ## Bantuan tidak perlu atau relevan dengan perangkat mobile.
             textbutton _("Bantuan") action ShowMenu("help")
 
-            ## Tombol keluar di banned di iOS dan tidak diperlukan di Android.
+        if renpy.variant("pc"):
+
+            ## Tombol keluar dilarang di iOS dan tidak diperlukan di Android dan
+            ## Web.
             textbutton _("Keluar") action Quit(confirm=not main_menu)
 
 
@@ -355,13 +354,11 @@ screen main_menu():
     ## Ini Memastikan Layar Menu Yang Lain Telah Di Timpa
     tag menu
 
-    style_prefix "main_menu"
-
     add gui.main_menu_background
 
     ## Frame kosong ini menggelap di menu utama.
     frame:
-        pass
+        style "main_menu_frame"
 
     ## Pernyataan 'use' mengikutsertakan layar lain ke layar ini. Isi sebenarnya
     ## dari menu utama adalah layar navigasi.
@@ -370,6 +367,8 @@ screen main_menu():
     if gui.show_name:
 
         vbox:
+            style "main_menu_vbox"
+
             text "[config.name!t]":
                 style "main_menu_title"
 
@@ -412,9 +411,9 @@ style main_menu_version:
 ## permainan, ini ditampilkan beserta layar judul, dan menampilkan latar
 ## belakang,judul,dan navigasi.
 ##
-## Parameter scroll dapat berisi 'None', atau "viewport" dan "vpgrid". Ketika
-## layar ini di maksudkan untuk di gunakan dengan cabang satu atau lebih, yang
-## di tempatkan di dalamnya.
+## Parameter scroll dapat berisi 'None', atau "viewport" dan "vpgrid". Layar
+## ini di maksudkan untuk di gunakan dengan cabang satu atau lebih, yang di
+## tempatkan di dalamnya.
 
 screen game_menu(title, scroll=None, yinitial=0.0):
 
@@ -565,11 +564,6 @@ screen about():
             text _("Dibuat Dengan {a=https://www.renpy.org/}Ren'Py{/a} [renpy.version_only].\n\n[renpy.license!t]")
 
 
-## Ini di definisikan kembali di options.rpy untuk menambahkan text ke layar
-## About.
-define gui.about = ""
-
-
 style about_label is gui_label
 style about_label_text is gui_label_text
 style about_text is gui_text
@@ -654,27 +648,40 @@ screen file_slots(title):
                         key "save_delete" action FileDelete(slot)
 
             ## Tombol untuk mengakses halaman lain.
-            hbox:
+            vbox:
                 style_prefix "page"
 
                 xalign 0.5
                 yalign 1.0
 
-                spacing gui.page_spacing
+                hbox:
+                    xalign 0.5
 
-                textbutton _("<") action FilePagePrevious()
+                    spacing gui.page_spacing
 
-                if config.has_autosave:
-                    textbutton _("{#auto_page}O") action FilePage("auto")
+                    textbutton _("<") action FilePagePrevious()
 
-                if config.has_quicksave:
-                    textbutton _("{#quick_page}C") action FilePage("quick")
+                    if config.has_autosave:
+                        textbutton _("{#auto_page}O") action FilePage("auto")
 
-                ## antara(1,10) beri nomor antara 1 sampai 9.
-                for page in range(1, 10):
-                    textbutton "[page]" action FilePage(page)
+                    if config.has_quicksave:
+                        textbutton _("{#quick_page}C") action FilePage("quick")
 
-                textbutton _(">") action FilePageNext()
+                    ## antara(1,10) beri nomor antara 1 sampai 9.
+                    for page in range(1, 10):
+                        textbutton "[page]" action FilePage(page)
+
+                    textbutton _(">") action FilePageNext()
+
+                if config.has_sync:
+                    if CurrentScreenName() == "save":
+                        textbutton _("Sinkronisasi Unggah"):
+                            action UploadSync()
+                            xalign 0.5
+                    else:
+                        textbutton _("Unduh Sinkronisasi"):
+                            action DownloadSync()
+                            xalign 0.5
 
 
 style page_label is gui_label
@@ -692,7 +699,7 @@ style page_label:
     ypadding 5
 
 style page_label_text:
-    text_align 0.5
+    textalign 0.5
     layout "subtitle"
     hover_color gui.hover_color
 
@@ -727,20 +734,13 @@ screen preferences():
             hbox:
                 box_wrap True
 
-                if renpy.variant("pc"):
+                if renpy.variant("pc") or renpy.variant("web"):
 
                     vbox:
                         style_prefix "radio"
-                        label _("Tampilam")
-                        textbutton _("Window") action Preference("display", "window")
+                        label _("Tampilan")
+                        textbutton _("Jendela") action Preference("display", "window")
                         textbutton _("Layar Penuh") action Preference("display", "fullscreen")
-
-                vbox:
-                    style_prefix "radio"
-                    label _("Arah Rollback")
-                    textbutton _("Matikan") action Preference("rollback side", "disable")
-                    textbutton _("Kiri") action Preference("rollback side", "left")
-                    textbutton _("Kanan") action Preference("rollback side", "right")
 
                 vbox:
                     style_prefix "check"
@@ -789,7 +789,7 @@ screen preferences():
 
 
                     if config.has_voice:
-                        label _("Volume Suara")
+                        label _("Volume Vokal")
 
                         hbox:
                             bar value Preference("voice volume")
@@ -846,7 +846,7 @@ style radio_vbox:
 
 style radio_button:
     properties gui.button_properties("radio_button")
-    foreground "gui/button/check_[prefix_]foreground.png"
+    foreground "gui/button/radio_[prefix_]foreground.png"
 
 style radio_button_text:
     properties gui.button_text_properties("radio_button")
@@ -876,7 +876,7 @@ style slider_vbox:
     xsize 675
 
 
-## Layar History ###############################################################
+## Layar Riwayat ###############################################################
 ##
 ## Layar yang menampilkan History dialog kepada pemain. Semenjak tidak ada yang
 ## spesial tentang layar ini, ini memiliki akses ke history dialog yang di
@@ -908,6 +908,7 @@ screen history():
 
                     label h.who:
                         style "history_name"
+                        substitute False
 
                         ## Mengambil warna dari text 'who' dari karakter, jika
                         ## di set.
@@ -915,7 +916,8 @@ screen history():
                             text_color h.who_args["color"]
 
                 $ what = renpy.filter_text_tags(h.what, allow=gui.history_allow_tags)
-                text what
+                text what:
+                    substitute False
 
         if not _history_list:
             label _("Riwayat dialog kosong.")
@@ -923,15 +925,13 @@ screen history():
 
 ## Ini menentukan tag apa yang diizinkan ditampilkan di layar sejarah/catatan.
 
-define gui.history_allow_tags = set()
+define gui.history_allow_tags = { "alt", "noalt", "rt", "rb", "art" }
 
 
 style history_window is empty
 
 style history_name is gui_label
 style history_name_text is gui_label_text
-style history_text is gui_text
-
 style history_text is gui_text
 
 style history_label is gui_label
@@ -949,7 +949,7 @@ style history_name:
 
 style history_name_text:
     min_width gui.history_name_width
-    text_align gui.history_name_xalign
+    textalign gui.history_name_xalign
 
 style history_text:
     xpos gui.history_text_xpos
@@ -957,7 +957,7 @@ style history_text:
     xanchor gui.history_text_xalign
     xsize gui.history_text_width
     min_width gui.history_text_width
-    text_align gui.history_text_xalign
+    textalign gui.history_text_xalign
     layout ("subtitle" if gui.history_text_xalign else "tex")
 
 style history_label:
@@ -989,7 +989,7 @@ screen help():
             hbox:
 
                 textbutton _("Papanketik") action SetScreenVariable("device", "keyboard")
-                textbutton _("Mouse") action SetScreenVariable("device", "mouse")
+                textbutton _("Tetikus") action SetScreenVariable("device", "mouse")
 
                 if GamepadExists():
                     textbutton _("Gamepad") action SetScreenVariable("device", "gamepad")
@@ -1005,7 +1005,7 @@ screen help():
 screen keyboard_help():
 
     hbox:
-        label _("Enter")
+        label _("Masukkan")
         text _("Dialog tingkat lanjut dan mengaktifkan antarmuka.")
 
     hbox:
@@ -1017,7 +1017,7 @@ screen keyboard_help():
         text _("Navigasi di antarmuka")
 
     hbox:
-        label _("Escape")
+        label _("Melarikan diri")
         text _("Akses menu permainan.")
 
     hbox:
@@ -1029,7 +1029,7 @@ screen keyboard_help():
         text _("Nyala/Matikan lompati dialog.")
 
     hbox:
-        label _("Page Up")
+        label _("Halaman Atas")
         text _("Putar mundur ke dialog sebelumnya.")
 
     hbox:
@@ -1047,6 +1047,10 @@ screen keyboard_help():
     hbox:
         label "V"
         text _("Nyalakan assisten {a=https://www.renpy.org/l/voicing}suara-sendiri{/a}")
+
+    hbox:
+        label "Shift+A"
+        text _("Membuka menu aksesibilitas.")
 
 
 screen mouse_help():
@@ -1122,7 +1126,7 @@ style help_label:
 style help_label_text:
     size gui.text_size
     xalign 1.0
-    text_align 1.0
+    textalign 1.0
 
 
 
@@ -1185,7 +1189,7 @@ style confirm_frame:
     yalign .5
 
 style confirm_prompt_text:
-    text_align 0.5
+    textalign 0.5
     layout "subtitle"
 
 style confirm_button:
@@ -1247,7 +1251,7 @@ style skip_text:
 
 style skip_triangle:
     ## Kami harus menggunakan font yang mempunyai glyph BLACK RIGHT-POINTING
-    ## SMALL TRIANGLE di dalam nya.
+    ## SMALL TRIANGLE didalamnya.
     font "DejaVuSans.ttf"
 
 
@@ -1318,9 +1322,8 @@ screen nvl(dialogue, items=None):
 
             use nvl_dialogue(dialogue)
 
-        ## Menampilkan menu, jika di berikan. Menu mungkin akan di tampilkan
-        ## secara tidak benar jika config.narrator_menu di set ke True, seperti
-        ## di atas.
+        ## Menampilkan menu, jika diberikan. Menu dapat ditampilkan dengan tidak
+        ## benar jika config.narrator_menu diatur ke True.
         for i in items:
 
             textbutton i.caption:
@@ -1380,7 +1383,7 @@ style nvl_label:
     yanchor 0.0
     xsize gui.nvl_name_width
     min_width gui.nvl_name_width
-    text_align gui.nvl_name_xalign
+    textalign gui.nvl_name_xalign
 
 style nvl_dialogue:
     xpos gui.nvl_text_xpos
@@ -1388,7 +1391,7 @@ style nvl_dialogue:
     ypos gui.nvl_text_ypos
     xsize gui.nvl_text_width
     min_width gui.nvl_text_width
-    text_align gui.nvl_text_xalign
+    textalign gui.nvl_text_xalign
     layout ("subtitle" if gui.nvl_text_xalign else "tex")
 
 style nvl_thought:
@@ -1397,7 +1400,7 @@ style nvl_thought:
     ypos gui.nvl_thought_ypos
     xsize gui.nvl_thought_width
     min_width gui.nvl_thought_width
-    text_align gui.nvl_thought_xalign
+    textalign gui.nvl_thought_xalign
     layout ("subtitle" if gui.nvl_text_xalign else "tex")
 
 style nvl_button:
@@ -1407,6 +1410,95 @@ style nvl_button:
 
 style nvl_button_text:
     properties gui.button_text_properties("nvl_button")
+
+
+## Layar gelembung #############################################################
+##
+## Layar gelembung digunakan untuk menampilkan dialog kepada pemain saat
+## menggunakan gelembung ucapan. Layar gelembung mengambil parameter yang sama
+## dengan layar ucapkan, harus membuat tampilan dengan id "apa", dan dapat
+## membuat tampilan dengan id "kotak nama", "siapa", dan "jendela".
+##
+## https://www.renpy.org/doc/html/bubble.html#bubble-screen
+
+screen bubble(who, what):
+    style_prefix "bubble"
+
+    window:
+        id "window"
+
+        if who is not None:
+
+            window:
+                id "namebox"
+                style "bubble_namebox"
+
+                text who:
+                    id "who"
+
+        text what:
+            id "what"
+
+style bubble_window is empty
+style bubble_namebox is empty
+style bubble_who is default
+style bubble_what is default
+
+style bubble_window:
+    xpadding 30
+    top_padding 5
+    bottom_padding 5
+
+style bubble_namebox:
+    xalign 0.5
+
+style bubble_who:
+    xalign 0.5
+    textalign 0.5
+    color "#000"
+
+style bubble_what:
+    align (0.5, 0.5)
+    text_align 0.5
+    layout "subtitle"
+    color "#000"
+
+define bubble.frame = Frame("gui/bubble.png", 55, 55, 55, 95)
+define bubble.thoughtframe = Frame("gui/thoughtbubble.png", 55, 55, 55, 55)
+
+define bubble.properties = {
+    "bottom_left" : {
+        "window_background" : Transform(bubble.frame, xzoom=1, yzoom=1),
+        "window_bottom_padding" : 27,
+    },
+
+    "bottom_right" : {
+        "window_background" : Transform(bubble.frame, xzoom=-1, yzoom=1),
+        "window_bottom_padding" : 27,
+    },
+
+    "top_left" : {
+        "window_background" : Transform(bubble.frame, xzoom=1, yzoom=-1),
+        "window_top_padding" : 27,
+    },
+
+    "top_right" : {
+        "window_background" : Transform(bubble.frame, xzoom=-1, yzoom=-1),
+        "window_top_padding" : 27,
+    },
+
+    "thought" : {
+        "window_background" : bubble.thoughtframe,
+    }
+}
+
+define bubble.expand_area = {
+    "bottom_left" : (0, 0, 0, 22),
+    "bottom_right" : (0, 0, 0, 22),
+    "top_left" : (0, 22, 0, 0),
+    "top_right" : (0, 22, 0, 0),
+    "thought" : (0, 0, 0, 0),
+}
 
 
 
@@ -1425,16 +1517,18 @@ screen quick_menu():
 
     zorder 100
 
-    hbox:
-        style_prefix "quick"
+    if quick_menu:
 
-        xalign 0.5
-        yalign 1.0
+        hbox:
+            style_prefix "quick"
 
-        textbutton _("Kembali") action Rollback()
-        textbutton _("Lompati") action Skip() alternate Skip(fast=True, confirm=True)
-        textbutton _("Otomatis") action Preference("auto-forward", "toggle")
-        textbutton _("Menu") action ShowMenu()
+            xalign 0.5
+            yalign 1.0
+
+            textbutton _("Kembali") action Rollback()
+            textbutton _("Lompati") action Skip() alternate Skip(fast=True, confirm=True)
+            textbutton _("Otomatis") action Preference("auto-forward", "toggle")
+            textbutton _("Menu") action ShowMenu()
 
 
 style window:
@@ -1443,7 +1537,7 @@ style window:
 
 style radio_button:
     variant "small"
-    foreground "gui/phone/button/check_[prefix_]foreground.png"
+    foreground "gui/phone/button/radio_[prefix_]foreground.png"
 
 style check_button:
     variant "small"
@@ -1509,15 +1603,10 @@ style vslider:
     base_bar Frame("gui/phone/slider/vertical_[prefix_]bar.png", gui.vslider_borders, tile=gui.slider_tile)
     thumb "gui/phone/slider/vertical_[prefix_]thumb.png"
 
-style slider_pref_vbox:
+style slider_vbox:
     variant "small"
     xsize None
 
-style slider_pref_slider:
+style slider_slider:
     variant "small"
     xsize 900
-
-
-
-
-
